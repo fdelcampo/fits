@@ -63,7 +63,7 @@ def prepareWorks(countWorks, name, width, height):
 
 
 
-threadList = ["Thread-1", "Thread-2", "Thread-3", "Thread-4", "Thread-5", "Thread-6", "Thread-7", "Thread-8", "Thread-9", "Thread-10", "Thread-11", "Thread-12", "Thread-13", "Thread-14", "Thread-15", "Thread-16", "Thread-17", "Thread-18"]
+threadList = ["Thread-1", "Thread-2", "Thread-3", "Thread-4"]#, "Thread-5", "Thread-6", "Thread-7", "Thread-8", "Thread-9", "Thread-10", "Thread-11", "Thread-12", "Thread-13", "Thread-14", "Thread-15", "Thread-16", "Thread-17", "Thread-18"]
 
 
 threads = []
@@ -120,7 +120,7 @@ def main(argv=sys.argv):
 	end = time.time()
 
 	print "Init %s -- End %s" % (time.asctime( time.localtime( ini ) ), time.asctime( time.localtime(end) ))
-	print "Time: %f" % (end-ini)
+	print "Time: %f seconds" % (end-ini)
 
 	print "Exiting Main Thread"
 

@@ -3,6 +3,7 @@
 
 import os, sys
 import inspect
+import exceptions
 
 SUCCEEDED_IMPORTING_NUMPY = True
 SUCCEEDED_IMPORTING_ASTROPY = True
@@ -86,7 +87,7 @@ def displace(reference, concatenable):
 	disx = math.sqrt(minx*minx)
 
 	print "displace y:%d x:%d" % (disy, disx)
-	return {"minx": float(minx), "maxx": float(maxx), "miny": float(miny), "maxy": float(maxy), "disx": float(disx), "disy": float(disy)}
+	return {"minx": int(minx), "maxx": int(maxx), "miny": int(miny), "maxy": int(maxy), "disx": int(disx), "disy": int(disy)}
 
 
 def writeFile(reference, concatenable, disx, disy):
@@ -132,25 +133,34 @@ def init_project(reference, concatenable, disx, disy, xini, yini, lenght, width,
 def init_project(reference, concatenable, disx, disy, xini, yini, lenght, width, height):
 	global IM
 
-	for k in range(xini * width + yini, xini * width + yini + lenght):
-		i = (k/width)
-		j = (k%width)
-		if IM[j+disy,i+disx] < reference['im'][j,i]:
-			IM[j+disy,i+disx] = reference['im'][j,i]
+	try:
+		for k in range(xini * width + yini, xini * width + yini + lenght):
+			i = (k/width)
+			j = (k%width)
+			if IM[j+disy,i+disx] < reference['im'][j,i]:
+				IM[j+disy,i+disx] = reference['im'][j,i]
+	except IndexError:
+		print "disx: %f disy: %f xini: %d yini: %d lenght: %d width: %d height: %d IM: (%d, %d)" % (disx, disy, xini, yini, lenght, width, height, IM.shape[1], IM.shape[0])
+		print "i: %d j: %d" % (i, j)
+
 
 
 
 def project(reference, concatenable, disx, disy, xini, yini, lenght, width, height):
 	global IM
 
-	for k in range(xini * width + yini, xini * width + yini + lenght):
-		#print "k: %d i: %d j: %d" % (k, (k/width), (k%width))
-		i = (k/width)
-		j = (k%width)
-		ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
-		ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
-		if IM[jj+disy,ii+disx] < concatenable['im'][j,i]:
-			IM[jj+disy,ii+disx] = concatenable['im'][j,i]
+	try:
+		for k in range(xini * width + yini, xini * width + yini + lenght):
+			#print "k: %d i: %d j: %d" % (k, (k/width), (k%width))
+			i = (k/width)
+			j = (k%width)
+			ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
+			ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
+			if IM[jj+disy,ii+disx] < concatenable['im'][j,i]:
+				IM[jj+disy,ii+disx] = concatenable['im'][j,i]
+	except IndexError:
+		print "disx: %f disy: %f xini: %d yini: %d lenght: %d width: %d height: %d IM: (%d, %d)" % (disx, disy, xini, yini, lenght, width, height, IM.shape[1], IM.shape[0])
+		print "i: %d j: %d" % (i, j)
 
 # main
 def main(argv):
