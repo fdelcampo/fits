@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
 import os, sys
@@ -21,7 +21,9 @@ except ImportError:
 	SUCCEEDED_IMPORTING_ASTROPY = False
 
 
+
 OUTPUT = "newfits.fits"
+
 
 def header(src_path):
 
@@ -44,13 +46,7 @@ def header(src_path):
 	return {'header': header, 'im': im, 'wcsdata': wcsdata, 'size': size}
 
 
-
-def projection(reference, concatenable, scale):
-
-
-	path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	name = "wcs_"
-	ext = "fits"
+def displace(reference, concatenable):
 
 	pointsRef = [[0,0], [0,reference['size'][1]], [reference['size'][0],0], [reference['size'][0],reference['size'][1]]]
 	points = [[0,0], [0,concatenable['size'][1]], [concatenable['size'][0],0], [concatenable['size'][0],concatenable['size'][1]]]
@@ -59,7 +55,7 @@ def projection(reference, concatenable, scale):
 	miny = 99999999
 	maxx = -99999999
 	maxy = -99999999
-	print "point"
+	print "second"
 	for p in points:
 		ra, dec = concatenable['wcsdata'].wcs_pix2world(p[0], p[1], 0)
 		ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
@@ -72,7 +68,7 @@ def projection(reference, concatenable, scale):
 			maxx = ii
 		if jj > maxy:
 			maxy = jj
-	print "pointRef"
+	print "reference"
 	for p in pointsRef:
 		ra, dec = reference['wcsdata'].wcs_pix2world(p[0], p[1], 0)
 		ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
@@ -86,30 +82,14 @@ def projection(reference, concatenable, scale):
 		if jj > maxy:
 			maxy = jj
 
-
-	#print "(%d, %d) (%d, %d) -- %f, %f" % (minx, miny, maxx, maxy, math.sqrt( miny*miny + maxy*maxy ), math.sqrt( minx*minx + maxx*maxx ))
-	#print "math.sqrt(%f*%f + %f*%f)" % (miny, miny, maxy, maxy)
-	#print "math.sqrt(%f + %f)" % (miny*miny, maxy*maxy)
-	#print "math.sqrt(%f)" % (miny*miny+maxy*maxy)
-	#print "%f" % ( math.sqrt(miny*miny+maxy*maxy) )
-	#print "(%d, %d) (%d, %d)" % (reference['size'][0], reference['size'][1], concatenable['size'][0], concatenable['size'][1])
-
-	im = np.zeros( [maxy - miny, maxx - minx], dtype=np.float32 )
-	
 	disy = math.sqrt(miny*miny)
 	disx = math.sqrt(minx*minx)
 
 	print "displace y:%d x:%d" % (disy, disx)
+	return {"minx": float(minx), "maxx": float(maxx), "miny": float(miny), "maxy": float(maxy), "disx": float(disx), "disy": float(disy)}
 
-	for j in range(0, reference['size'][1]):
-		for i in range(0, reference['size'][0]):
-			im[j+disy,i+disx] = reference['im'][j,i]
 
-	for j in range(0, concatenable['size'][1]):
-		for i in range(0, concatenable['size'][0]):
-			ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
-			ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
-			im[jj+disy,ii+disx] = concatenable['im'][j,i]
+def writeFile(reference, concatenable, disx, disy):
 
 	w = wcs.WCS(naxis=2)
 	#ra, dec = reference['wcsdata'].wcs_pix2world(reference['size'][0]/2, reference['size'][1]/2, 0)
@@ -124,21 +104,19 @@ def projection(reference, concatenable, scale):
 	
 	if reference['wcsdata'].wcs.has_cd():
 		cd = reference['wcsdata'].wcs.cd
-		w.wcs.cd = cd*scale
+		w.wcs.cd = cd
 		w.wcs.cdelt = [np.sqrt(w.wcs.cd[0,0]*w.wcs.cd[0,0]+w.wcs.cd[1,0]*w.wcs.cd[1,0]), np.sqrt(w.wcs.cd[0,1]*w.wcs.cd[0,1]+w.wcs.cd[1,1]*w.wcs.cd[1,1])]
 		w.wcs.pc = [[w.wcs.cd[0,0]/ w.wcs.cdelt[0], w.wcs.cd[0,1]/ w.wcs.cdelt[0]],[w.wcs.cd[1,0]/ w.wcs.cdelt[1], w.wcs.cd[1,1]/ w.wcs.cdelt[1]]]
 	else:
 		pc = reference['wcsdata'].wcs.pc
-		w.wcs.pc = pc*scale
-		#w.wcs.cdelt = 
+		w.wcs.pc = pc
+		w.wcs.cdelt = reference['wcsdata'].wcs.cdelt
 
 	header = w.to_header()
-	#header['NAXIS1'] = im.shape[1]
-	#header['NAXIS2'] = im.shape[0]
+
 	header['OBJECT'] = reference['header']['OBJECT'] + " - " + concatenable['header']['OBJECT']
 
-
-	hdu = fits.PrimaryHDU(header=header, data=im)
+	hdu = fits.PrimaryHDU(header=header, data=IM)
 	if os.path.isfile(OUTPUT):
 		os.remove(OUTPUT)	
 	
@@ -146,28 +124,79 @@ def projection(reference, concatenable, scale):
 
 	#fits.writeto(path+"_newfits.fits", im, header)
 
+'''
+def init_project(reference, concatenable, disx, disy, xini, yini, lenght, width, height):
+	init_project(reference, disx, disy, xini, yini, lenght, width, height)
+'''
 
+def init_project(reference, concatenable, disx, disy, xini, yini, lenght, width, height):
+	global IM
+
+	for k in range(xini * width + yini, xini * width + yini + lenght):
+		i = (k/width)
+		j = (k%width)
+		if IM[j+disy,i+disx] < reference['im'][j,i]:
+			IM[j+disy,i+disx] = reference['im'][j,i]
+
+
+
+def project(reference, concatenable, disx, disy, xini, yini, lenght, width, height):
+	global IM
+
+	for k in range(xini * width + yini, xini * width + yini + lenght):
+		#print "k: %d i: %d j: %d" % (k, (k/width), (k%width))
+		i = (k/width)
+		j = (k%width)
+		ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
+		ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
+		if IM[jj+disy,ii+disx] < concatenable['im'][j,i]:
+			IM[jj+disy,ii+disx] = concatenable['im'][j,i]
 
 # main
-if len(sys.argv) > 3:
-    SRC_PATH = os.path.realpath(sys.argv[1])
-    SRC_PATH2 = os.path.realpath(sys.argv[2])
-    OUTPUT = sys.argv[3]
-elif len(sys.argv) > 2:
-    SRC_PATH = os.path.realpath(sys.argv[1])
-    SRC_PATH2 = os.path.realpath(sys.argv[2])
-elif len(sys.argv) > 1:
-	SRC_PATH = os.path.realpath(sys.argv[1])
+def main(argv):
+	global SRC_PATH
+	global SRC_PATH2
+	global OUTPUT
+	global IM
+	global DISP
+	global REFERENCE
+	global CONCATENABLE
 
-if not SUCCEEDED_IMPORTING_ASTROPY and not SUCCEEDED_IMPORTING_NUMPY:
-	print "You need library Astropy and Numpy"
-else:
-	#headerRef(SRC_PATH)
-	#projection(SRC_PATH2)
-	reference = header(SRC_PATH)
-	print "Object ref: %s" % (reference['header']['OBJECT'])
-	second = header(SRC_PATH2)
-	print "Object second: %s" % (second['header']['OBJECT'])
-	scale = math.pow(2, 5-1)
-	projection(reference, second, 1/scale)
+
+	if len(argv) > 3:
+	    SRC_PATH = os.path.realpath(argv[1])
+	    SRC_PATH2 = os.path.realpath(argv[2])
+	    OUTPUT = argv[3]
+	elif len(argv) > 2:
+	    SRC_PATH = os.path.realpath(argv[1])
+	    SRC_PATH2 = os.path.realpath(argv[2])
+	elif len(argv) > 1:
+		SRC_PATH = os.path.realpath(argv[1])
+	else:
+		"You need parameters"
+
+	if not SUCCEEDED_IMPORTING_ASTROPY and not SUCCEEDED_IMPORTING_NUMPY:
+		print "You need library Astropy and Numpy"
+	else:
+
+
+		REFERENCE = header(SRC_PATH)
+		print "Object ref: %s" % (REFERENCE['header']['OBJECT'])
+		CONCATENABLE = header(SRC_PATH2)
+		print "Object concatenable: %s" % (CONCATENABLE['header']['OBJECT'])
+		
+		
+		DISP = displace(REFERENCE, CONCATENABLE)
+
+		IM = np.zeros( [DISP['maxy'] - DISP['miny'], DISP['maxx'] - DISP['minx']], dtype=np.float32 )
+
+		#init_project(reference, DISP['disx'], DISP['disy'], 0, 0, reference['size'][0]*reference['size'][1], reference['size'][0], reference['size'][1])
+
+		#project(reference, concatenable, DISP['disx'], DISP['disy'], 0, 0, concatenable['size'][0]*concatenable['size'][1], concatenable['size'][0], concatenable['size'][1])
+
+		#writeFile(reference, concatenable, DISP['disx'], DISP['disy'])
 	
+
+
+if __name__ == "__main__":
+	main(argv=sys.argv)
