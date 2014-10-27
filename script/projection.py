@@ -22,7 +22,7 @@ except ImportError:
 	SUCCEEDED_IMPORTING_ASTROPY = False
 
 
-
+PARALLEL = True
 OUTPUT = "newfits.fits"
 
 
@@ -134,9 +134,14 @@ def init_project(reference, concatenable, disx, disy, xini, yini, lenght, width,
 	global IM
 
 	try:
+		'''
 		for k in range(xini * width + yini, xini * width + yini + lenght):
 			i = (k/width)
 			j = (k%width)
+		'''
+		for k in range(yini * height + xini, yini * height + xini + lenght):
+			i = (k/height)
+			j = (k%height)
 			if IM[j+disy,i+disx] < reference['im'][j,i]:
 				IM[j+disy,i+disx] = reference['im'][j,i]
 	except IndexError:
@@ -150,10 +155,15 @@ def project(reference, concatenable, disx, disy, xini, yini, lenght, width, heig
 	global IM
 
 	try:
+		'''
 		for k in range(xini * width + yini, xini * width + yini + lenght):
-			#print "k: %d i: %d j: %d" % (k, (k/width), (k%width))
 			i = (k/width)
 			j = (k%width)
+		'''
+		for k in range(yini * height + xini, yini * height + xini + lenght):
+			i = (k/height)
+			j = (k%height)
+			#print "k: %d i: %d j: %d" % (k, (k/width), (k%width))
 			ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
 			ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
 			if IM[jj+disy,ii+disx] < concatenable['im'][j,i]:
@@ -161,6 +171,7 @@ def project(reference, concatenable, disx, disy, xini, yini, lenght, width, heig
 	except IndexError:
 		print "disx: %f disy: %f xini: %d yini: %d lenght: %d width: %d height: %d IM: (%d, %d)" % (disx, disy, xini, yini, lenght, width, height, IM.shape[1], IM.shape[0])
 		print "i: %d j: %d" % (i, j)
+
 
 # main
 def main(argv):
@@ -200,13 +211,15 @@ def main(argv):
 
 		IM = np.zeros( [DISP['maxy'] - DISP['miny'], DISP['maxx'] - DISP['minx']], dtype=np.float32 )
 
-		#init_project(reference, DISP['disx'], DISP['disy'], 0, 0, reference['size'][0]*reference['size'][1], reference['size'][0], reference['size'][1])
-
-		#project(reference, concatenable, DISP['disx'], DISP['disy'], 0, 0, concatenable['size'][0]*concatenable['size'][1], concatenable['size'][0], concatenable['size'][1])
-
-		#writeFile(reference, concatenable, DISP['disx'], DISP['disy'])
+		if not PARALLEL:
+			#init_project(REFERENCE, CONCATENABLE, DISP['disx'], DISP['disy'], 0, 0, REFERENCE['size'][0]*REFERENCE['size'][1], REFERENCE['size'][1], REFERENCE['size'][0])
+			#project(REFERENCE, CONCATENABLE, DISP['disx'], DISP['disy'], 0, 0, CONCATENABLE['size'][0]*CONCATENABLE['size'][1], CONCATENABLE['size'][1], CONCATENABLE['size'][0])
+			init_project(REFERENCE, CONCATENABLE, DISP['disx'], DISP['disy'], 0, 0, REFERENCE['size'][0]*REFERENCE['size'][1], REFERENCE['size'][0], REFERENCE['size'][1])
+			project(REFERENCE, CONCATENABLE, DISP['disx'], DISP['disy'], 0, 0, CONCATENABLE['size'][0]*CONCATENABLE['size'][1], CONCATENABLE['size'][0], CONCATENABLE['size'][1])
+			writeFile(REFERENCE, CONCATENABLE, DISP['disx'], DISP['disy'])
 	
 
 
 if __name__ == "__main__":
+	PARALLEL = False
 	main(argv=sys.argv)
