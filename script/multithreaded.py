@@ -33,14 +33,10 @@ def process_data(threadName, q):
 			data = q.get()
 			queueLock.release()
 			print "%s processing %s" % (threadName, data)
-			
 			#project(xini=data['ini']['x'], yini=data['ini']['y'], lenght=data['lenght'], width=4, height=4)
-
 			methodToCall = getattr(projection, data['name'])
 			methodToCall(reference=projection.REFERENCE, concatenable=projection.CONCATENABLE, disx=projection.DISP['disx'], disy=projection.DISP['disy'], 
 						xini=data['ini']['x'], yini=data['ini']['y'], lenght=data['lenght'], width=data['width'], height=data['height'])
-
-
 		else:
 			queueLock.release()
 		time.sleep(1)
@@ -63,7 +59,7 @@ def prepareWorks(countWorks, name, width, height):
 
 
 
-threadList = ["Thread-1", "Thread-2", "Thread-3", "Thread-4"]#, "Thread-5", "Thread-6", "Thread-7", "Thread-8", "Thread-9", "Thread-10", "Thread-11", "Thread-12", "Thread-13", "Thread-14", "Thread-15", "Thread-16", "Thread-17", "Thread-18"]
+threadList = ["Thread-1", "Thread-2"]#, "Thread-3", "Thread-4"]#, "Thread-5", "Thread-6", "Thread-7", "Thread-8", "Thread-9", "Thread-10", "Thread-11", "Thread-12", "Thread-13", "Thread-14", "Thread-15", "Thread-16", "Thread-17", "Thread-18"]
 
 
 threads = []
@@ -79,14 +75,12 @@ def main(argv=sys.argv):
 	projection.main(argv)
 
 	workList = prepareWorks(countWorks=len(threadList), name="init_project", width=projection.REFERENCE['size'][0], height=projection.REFERENCE['size'][1])
-	workList.extend(prepareWorks(countWorks=3, name="project", width=projection.CONCATENABLE['size'][0], height=projection.CONCATENABLE['size'][1]))
+	workList.extend(prepareWorks(countWorks=len(threadList), name="project", width=projection.CONCATENABLE['size'][0], height=projection.CONCATENABLE['size'][1]))
 
-	#init_project(reference, DISP['disx'], DISP['disy'], 0, 0, reference['size'][0]*reference['size'][1], reference['size'][0], reference['size'][1])
+	#projection.init_project(projection.REFERENCE, projection.CONCATENABLE, projection.DISP['disx'], projection.DISP['disy'], 0, 0, projection.REFERENCE['size'][0]*projection.REFERENCE['size'][1], projection.REFERENCE['size'][0], projection.REFERENCE['size'][1])
+	#projection.project(projection.REFERENCE, projection.CONCATENABLE, projection.DISP['disx'], projection.DISP['disy'], 0, 0, projection.REFERENCE['size'][0]*projection.REFERENCE['size'][1], projection.REFERENCE['size'][0], projection.REFERENCE['size'][1])
 
-	#project(reference, concatenable, DISP['disx'], DISP['disy'], 0, 0, concatenable['size'][0]*concatenable['size'][1], concatenable['size'][0], concatenable['size'][1])
-
-	#
-
+	
 	queueLock = threading.Lock()
 	workQueue = Queue.Queue( len(workList) )
 
@@ -114,6 +108,7 @@ def main(argv=sys.argv):
 	for t in threads:
 		t.join()
 
+	
 
 	projection.writeFile(projection.REFERENCE, projection.CONCATENABLE, projection.DISP['disx'], projection.DISP['disy'])
 
