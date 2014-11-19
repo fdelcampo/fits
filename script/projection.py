@@ -130,8 +130,8 @@ def size_im_without_ref(reference, concatenable):
 	sizex = maxx - minx
 	sizey = maxy - miny
 
-	disy = math.sqrt(miny*miny)
-	disx = math.sqrt(minx*minx)
+	disy = miny
+	disx = minx
 
 	return {"minx": int(minx), "maxx": int(maxx), "miny": int(miny), "maxy": int(maxy), "sizex": int(sizex), "sizey": int(sizey), "disx": int(disx), "disy": int(disy)}
 
@@ -260,7 +260,7 @@ def project_without_reference(reference, concatenable, disx, disy, xini, yini, l
 			porcent = int(float(k)/float(yini * height + xini +lenght)*100)
 			if before != porcent:
 				sys.stdout.write('\r')
-				sys.stdout.write("[%-50s] %d%% RESOURCE: %.2f MB 	-- project" % ('='*(porcent/2), porcent, memory_usage_resource()))
+				sys.stdout.write("[%-50s] %d%% RESOURCE: %.2f MB 	-- project_without_reference" % ('='*(porcent/2), porcent, memory_usage_resource()))
 				sys.stdout.flush()
 				before = porcent
 				if not notbackup:
@@ -273,18 +273,23 @@ def project_without_reference(reference, concatenable, disx, disy, xini, yini, l
 			ra, dec = concatenable['wcsdata'].wcs_pix2world(i, j, 0)
 			ii, jj = reference['wcsdata'].wcs_world2pix(ra, dec, 0)
 
+			rara, decdec = reference['wcsdata'].wcs_pix2world(ii, jj, 0)
+			iii, jjj = concatenable['wcsdata'].wcs_world2pix(rara, decdec, 0)
+			'''
 			if ii-disx <= 0 or jj-disy <= 0 or ii-disx >= width or jj-disy >= height :
 				print "(%d, %d) dis (%d, %d) (%d, %d)" % (ii-i, jj-j, disx, disy, ii-disx, jj-disy)
-
 			'''
-			if IM[jj+disy,ii+disx] < concatenable['im'][j,i]:
-				IM[jj+disy,ii+disx] = concatenable['im'][j,i]
+			print '(%d, %d) <-- (%d, %d) [%f]' % (iii, jjj, i,j,concatenable['im'][j,i])
+			print IM.shape
+			
+			if IM[jjj+1, iii+1] < concatenable['im'][j,i]:
+				IM[jjj+1, iii+1] = concatenable['im'][j,i]
 				if notbackup:
 					notbackup = False
 			else:
 				if not notbackup:
 					notbackup = True
-			'''
+			
 
 		print ""
 	except IndexError:
