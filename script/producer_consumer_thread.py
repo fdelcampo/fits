@@ -52,7 +52,7 @@ def producer():
 
 	import random, time
 	import producer
-	p = producer.Producer(exchange_name='integers', host='192.168.1.213', virtual_host='/fitsuc', userid='fitsuc', password='wall.13')
+	p = producer.Producer(exchange_name='integers', host='192.168.1.213', virtual_host='/fitsuc', userid='guest', password='guest')
 	while True:
 		# generate a random integer between 1 and 100 included
 		i = random.randint(1, 100)
@@ -74,7 +74,7 @@ def consumer(routing_key):
 
 	import consumer
 
-	c = consumer.Consumer(host='192.168.1.213', userid='fitsuc', password='wall.13')
+	c = consumer.Consumer(host='192.168.1.213', userid='guest', password='guest')
 	c.declare_exchange(exchange_name='integers')
 	c.declare_queue(queue_name=('%ss')%(routing_key), routing_key=routing_key)
 
