@@ -4,7 +4,7 @@ import time
 
 
 class Consumer(object):
-	def __init__(self, host, userid, password):
+	def __init__(self, host, virtual_host, userid, password):
 		"""
 		Constructor. Initiate a connection to the RabbitMQ server.
 
@@ -15,8 +15,11 @@ class Consumer(object):
 		#self.connection = amqp.Connection(host=host, userid=userid,
 		#    password=password, virtual_host="/", insist=False)
 		#self.channel = self.connection.channel()
+
+
+		credentials = pika.PlainCredentials(userid, password)
 		self.connection = pika.BlockingConnection(pika.ConnectionParameters(
-        	host=host))
+        	host=host, virtual_host=virtual_host, port=5672, credentials=credentials))
 		self.channel = self.connection.channel()
 
 

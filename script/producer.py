@@ -17,9 +17,14 @@ class Producer(object):
 		#self.connection = amqp.Connection(host=host, userid=userid,
 		#    password=password, virtual_host='/', insist=False)
 		#self.channel = self.connection.channel()
+		credentials = pika.PlainCredentials(userid, password)
 		self.connection = pika.BlockingConnection(pika.ConnectionParameters(
-        	host=host))
+        	host=host, virtual_host=virtual_host, port=5672, credentials=credentials))
 		self.channel = self.connection.channel()
+		#self.channel.exchange_declare(exchange=exchange_name)
+		#self.channel.queue_declare(queue='task_queue', durable=True)
+		#print "Producer"
+		#print self
 
 
 	def publish(self, message, routing_key):
@@ -36,15 +41,17 @@ class Producer(object):
 		#                           routing_key=routing_key, msg=msg)
 
 		#channel.queue_declare(queue='task_queue', durable=True)
-
+		#self.channel.queue_declare(queue="%ss" % routing_key, durable=True)
 		self.channel.basic_publish(exchange=self.exchange_name,
 		                      routing_key=routing_key,
-		                      body=message,
-		                      properties=pika.BasicProperties(
-		                         delivery_mode = 2, # make message persistent
-		                      ))
-		#print " [x] Sent %r" % (message,)
-
+		                      body=message#,
+		                      #properties=pika.BasicProperties(
+		                      #	content_type = 'application/json'
+		                      #   delivery_mode = 2, # make message persistent
+		                      )#)
+		print " [x] Sent %r" % (message,)
+		#print "publish"
+		
 
 	def close(self):
 		"""

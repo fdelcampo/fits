@@ -51,45 +51,16 @@ def header(src_path):
 	#print "RESOURCE: %.2f" % (memory_usage_resource())
 	return {'header': header, 'wcsdata': wcsdata, 'size': size}
 
+def pix2world(wcsdata, x, y):
+	return wcsdata.wcs_pix2world(x, y, 0)
+def world2pix(wcsdata, ra, dec):
+	return wcsdata.wcs_world2pix(ra, dec, 0)
 
-def listener(reference):
 
-	import pika
-	import time
-	'''
-	credentials = pika.PlainCredentials('fitsuc', 'wall.13')
-	parameters = pika.ConnectionParameters('192.168.1.213',
-	                                       5672,
-	                                       '/fitsuc',
-	                                       credentials)
-	'''
-	#parameters = pika.URLParameters('amqp://fitsuc:wall.13@192.168.1.213:5672/fitsuc%2F')
-
-	#connection = pika.BlockingConnection(parameters)
-
-	connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host='192.168.1.213', port=5672, virtual_host='/fitsuc', ))
-	channel = connection.channel()
-
-	channel.queue_declare(queue='task_queue', durable=True)
-	print ' [*] Waiting for messages. To exit press CTRL+C'
-
-	def callback(ch, method, properties, body):
-	    print " [x] Received %r" % (body,)
-	    time.sleep( body.count('.') )
-	    print " [x] Done"
-	    ch.basic_ack(delivery_tag = method.delivery_tag)
-
-	channel.basic_qos(prefetch_count=1)
-	channel.basic_consume(callback,
-	                      queue='task_queue')
-
-	channel.start_consuming()
-
-	print "Listing queues ..."
 
 # main
 def main(argv):
+	global REFERENCE
 
 	if len(argv) > 1:
 		SRC_PATH = os.path.realpath(argv[1])
@@ -103,7 +74,7 @@ def main(argv):
 	else:
 		if os.path.isfile(SRC_PATH):
 			REFERENCE = header(SRC_PATH)
-			listener(REFERENCE);
+
 		else:
 			print "The file not exist"
 			return
