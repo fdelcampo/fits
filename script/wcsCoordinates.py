@@ -15,9 +15,14 @@ except ImportError:
 # http://www.astropy.org/
 try:
 	from astropy.io import fits
-	from astropy import wcs 
+	from astropy import wcs
+	from astropy import units as u
+	from astropy.coordinates import SkyCoord
+
 except ImportError:
 	SUCCEEDED_IMPORTING_ASTROPY = False
+
+SRC_PATH = ""
 
 
 def memory_usage_resource():
@@ -47,39 +52,108 @@ def header(src_path):
 		hdulist.close()
 		return
 
+	print wcsdata.printwcs()
+
 	hdulist.close()
 	#print "RESOURCE: %.2f" % (memory_usage_resource())
-	return {'header': header, 'wcsdata': wcsdata, 'size': size}
+	return {'header': header, 'wcsdata': wcsdata, 'size': size, 'ctype': wcsdata.wcs.ctype}
+
+def set_reference(src_path):
+	global REFERENCE, SRC_PATH
+
+	if not src_path is SRC_PATH:
+
+		if os.path.isfile(src_path):
+			REFERENCE = header(src_path)
+			SRC_PATH = src_path
+			return True
+		else:
+			print "The file not exist"
+			return False
+	else:
+		return True
+
 
 def pix2world(wcsdata, x, y):
-	return wcsdata.wcs_pix2world(x, y, 0)
-def world2pix(wcsdata, ra, dec):
-	return wcsdata.wcs_world2pix(ra, dec, 0)
+	print "pix2world"
+	print "x: %f -- y: %f" % (x, y)
+	ra, dec = wcsdata.wcs_pix2world(x, y, 1)
+	print "ra: %f -- dec: %f" % (ra, dec)
+	xx, yy = wcsdata.wcs_world2pix(ra, dec, 0)
+	print "xx: %f -- yy: %f" % (xx, yy)
+	return wcsdata.wcs_pix2world(x, y, 1)
 
+def world2pix(wcsdata, ra, dec):
+	print "world2pix"
+	print "ra: %f -- dec: %f" % (ra, dec)
+	ctype_x, ctype_y = wcsdata.wcs.ctype
+	print wcsdata.wcs.ctype
+	
+	if "GLON" in ctype_x and "GLAT" in ctype_y:
+		l, b = icrs2galactic(ra, dec)
+		px, py = wcsdata.wcs_world2pix(l, b, 0)
+	elif "RA" in ctype_x and "DEC" in ctype_y:
+		px, py = wcsdata.wcs_world2pix(ra, dec, 0)
+
+	print "x: %f -- y: %f" % (px, py)
+	rara, decdec = wcsdata.wcs_pix2world(px, py, 1)
+	print "rara: %f -- decdec: %f" % (rara, decdec)
+
+	return [px, py]
+
+def icrs2galactic(ra, dec):
+	print "ra: %f - dec: %f" % (ra, dec)
+	ecuatorial = SkyCoord(ra=ra, dec=dec, frame='icrs', unit='deg')
+	print ecuatorial
+	galactic = ecuatorial.galactic
+	print galactic
+	return [galactic.l.deg, galactic.b.deg]
+
+def galactic2icrs(l, b):
+	print "l: %f - b: %f" % (l, b)
+	galactic = SkyCoord(l=l, b=b, frame='galactic', unit='deg')
+	print galactic
+	ecuatorial = galactic.icrs
+	print ecuatorial
+	return [ecuatorial.ra.deg, ecuatorial.dec.deg]
+
+
+def worldgalactic(l, b):
+	galactic = SkyCoord(l=l, b=b, frame='galactic', unit='deg')
+	return galactic.to_string('dms')
+
+def worldecuatorial(ra, dec):
+	ecuatorial = SkyCoord(ra=ra, dec=dec, frame='icrs', unit='deg')
+	return ecuatorial.to_string('hmsdms')
 
 
 # main
 def main(argv):
 	global REFERENCE
 
-	if len(argv) > 1:
-		SRC_PATH = os.path.realpath(argv[1])
-	else:
-		print "You need parameter of Fits image reference"
-		return
-
 	if not SUCCEEDED_IMPORTING_ASTROPY and not SUCCEEDED_IMPORTING_NUMPY:
 		print "You need library Astropy and Numpy"
 		return
 	else:
-		if os.path.isfile(SRC_PATH):
-			REFERENCE = header(SRC_PATH)
-
+		if len(argv) > 1:
+			SRC_PATH = os.path.realpath(argv[1])
+			set_reference(SRC_PATH)
 		else:
-			print "The file not exist"
-			return
+			SRC_PATH = ""
+		
 
 
 
 if __name__ == "__main__":
 	main(argv=sys.argv)
+
+	'''
+	print "icrs2galactic"
+	print "pix2world"
+	[ra, dec] = pix2world(REFERENCE['wcsdata'], 0,0)
+	print "ra: %f - dec: %f" % (ra, dec)
+	[l, b] = icrs2galactic(ra, dec)
+	print "l: %f, b: %f" % (l, b)
+	[ra2, dec2] = galactic2icrs(l, b)
+	print "ra: %f - dec: %f" % (ra2, dec2)
+	'''
